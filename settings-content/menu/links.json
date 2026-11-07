@@ -1,0 +1,21 @@
+{
+  "links": [
+    {
+      "menu": "main-menu",
+      "title": "Theme Setup Demo",
+      "path": "demo/theme-setup",
+      "weight": 20,
+      "expanded": false,
+      "hidden": false
+    },
+    {
+      "menu": "main-menu",
+      "title": "Documentation",
+      "path": "demo/theme-setup-docs",
+      "parent": "demo/theme-setup",
+      "weight": 0,
+      "expanded": false,
+      "hidden": false
+    }
+  ]
+}

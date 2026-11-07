@@ -1,0 +1,11 @@
+{
+  "terms": [
+    {
+      "vocabulary": "tags",
+      "name": "Theme Setup Demo",
+      "description": "Example taxonomy term created by Theme Setup",
+      "weight": 0,
+      "path": "demo/theme-setup-tag"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "content": [
+    {
+      "type": "page",
+      "title": "Theme Setup Demo",
+      "path": "demo/theme-setup",
+      "status": 1,
+      "promote": 0,
+      "body": {
+        "value": "<p>This example page was imported from settings-content/content/content.json.</p>",
+        "format": "filtered_html"
+      }
+    },
+    {
+      "type": "page",
+      "title": "Theme Setup Documentation",
+      "path": "demo/theme-setup-docs",
+      "status": 1,
+      "body": {
+        "value": "<p>Example content for testing the JSON-based theme setup library.</p>",
+        "format": "filtered_html"
+      }
+    }
+  ]
+}

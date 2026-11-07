@@ -1,0 +1,11 @@
+{
+  "filters": [
+    {
+      "view": "home_project",
+      "display": "block",
+      "filter": "field_portfolio_main_tid",
+      "vocabulary": "tags",
+      "term": "Theme Setup Demo"
+    }
+  ]
+}

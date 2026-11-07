@@ -1,0 +1,15 @@
+{
+  "layouts": [
+    {
+      "name": "home",
+      "blocks": [
+        {
+          "action": "add",
+          "plugin": "system:main-menu",
+          "region": "header",
+          "position": 0
+        }
+      ]
+    }
+  ]
+}

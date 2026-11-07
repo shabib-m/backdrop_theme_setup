@@ -1,0 +1,10 @@
+{
+  "layouts": [
+    {
+      "name": "home",
+      "template": "boxton",
+      "title_display": "none",
+      "title": "Theme Setup Demo Home"
+    }
+  ]
+}
