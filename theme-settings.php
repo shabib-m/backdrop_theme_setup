@@ -3,7 +3,7 @@
 /**
  * Implements hook_form_FORM_ID_alter().
  */
-function theme_setup_form_system_theme_settings_alter(&$form, &$form_state) {
+function backdrop_theme_setup_form_system_theme_settings_alter(&$form, &$form_state) {
   // Theme setup vertical tabs.
   $form['theme_setup_tabs'] = array(
     '#type' => 'vertical_tabs',
@@ -114,8 +114,7 @@ function theme_setup_form_system_theme_settings_alter(&$form, &$form_state) {
 /**
  * Submit handler for theme setup settings.
  */
-
-function theme_setup_theme_setup_submit($form, &$form_state) {
+function backdrop_theme_setup_theme_setup_submit($form, &$form_state) {
   $import_terms = !empty($form_state['values']['import_terms']);
   $import_content = !empty($form_state['values']['import_content']);
   $import_menu_links = !empty($form_state['values']['import_menu_links']);
@@ -155,7 +154,7 @@ function theme_setup_theme_setup_submit($form, &$form_state) {
     return;
   }
 
-  $theme = 'theme_setup';
+  $theme = 'backdrop_theme_setup';
   $file = backdrop_get_path('theme', $theme) . '/includes/theme-setup.inc';
 
   if (!is_file($file)) {
