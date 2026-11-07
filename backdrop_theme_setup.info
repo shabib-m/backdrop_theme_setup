@@ -1,5 +1,7 @@
+type = theme
 name = Theme Setup Example
 description = Demonstration theme for JSON-driven Backdrop setup. Not intended for production use.
 backdrop = 1.x
-base theme = basis
-package = Other
+version = BACKDROP_VERSION
+
+settings[import_terms] = 0
