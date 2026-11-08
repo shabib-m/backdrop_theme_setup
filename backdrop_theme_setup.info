@@ -4,4 +4,4 @@ description = Demonstration theme for JSON-driven Backdrop setup. Not intended f
 backdrop = 1.x
 version = BACKDROP_VERSION
 
-settings[import_terms] = 0
+settings[theme_setup_enabled] = 1
