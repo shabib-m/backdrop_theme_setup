@@ -46,9 +46,4 @@ A review/demo package for the JSON-driven Theme Setup library. **Not production-
 - The submit handler removes one-time checkbox values from `$form_state['values']`, but the ordering relative to Backdrop's standard settings save handler should be verified in a real installation.
 - The image-style flush uses `image_style_flush($style_definition)` rather than passing a string name.
 
-## Suggested review questions
 
-1. Should this remain an opt-in theme helper, or be implemented as a companion module?
-2. What is the safest way to record imported objects and make reruns idempotent?
-3. How should dependencies, partial failures, and rollback be handled?
-4. Would a declarative JSON schema and automated tests make this reusable for other themes?
