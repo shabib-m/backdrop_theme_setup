@@ -1,3 +1,4 @@
+
 {
   "content": [
     {
@@ -19,6 +20,34 @@
       "body": {
         "value": "<p>Example content for testing the JSON-based theme setup library.</p>",
         "format": "filtered_html"
+      }
+    },
+    {
+      "type": "post",
+      "title": "Introduction to Backdrop CMS",
+      "body": {
+        "value": "Learn how Backdrop CMS helps developers build flexible websites.",
+        "format": "filtered_html"
+      },
+      "status": 1,
+      "path": "articles/introduction-to-backdrop",
+      "fields": {
+        "field_image": "backdrop-intro.jpg",
+        "field_tags": "Articles"
+      }
+    },
+    {
+      "type": "post",
+      "title": "Building Websites with Tailwind CSS",
+      "body": {
+        "value": "Discover how to create responsive designs using Tailwind CSS.",
+        "format": "filtered_html"
+      },
+      "status": 1,
+      "path": "articles/tailwind-css",
+      "fields": {
+        "field_image": "tailwind-css.jpg",
+        "field_tags": "Articles"
       }
     }
   ]
