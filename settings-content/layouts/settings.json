@@ -1,3 +1,4 @@
+
 {
   "layouts": [
     {
@@ -5,6 +6,10 @@
       "template": "boxton",
       "title_display": "none",
       "title": "Theme Setup Demo Home"
+    },
+    {
+      "name": "default",
+      "template": "boxton"
     }
   ]
 }
