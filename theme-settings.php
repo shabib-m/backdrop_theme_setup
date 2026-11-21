@@ -4,11 +4,41 @@
  * Implements hook_form_FORM_ID_alter().
  */
 function backdrop_theme_setup_form_system_theme_settings_alter(&$form, &$form_state) {
+  $theme = 'backdrop_theme_setup';
+  $library = backdrop_get_path('theme', $theme) . '/includes/theme-setup.inc';
+  if (is_file($library)) {
+    require_once $library;
+  }
+  $requirements = function_exists('theme_setup_module_requirements')
+    ? theme_setup_module_requirements($theme)
+    : array('valid' => FALSE, 'missing' => array(), 'disabled' => array(), 'invalid' => array());
+  $blocked = !$requirements['valid'] || $requirements['missing'] || $requirements['invalid'];
+  $needs_enable = !empty($requirements['disabled']);
+
   // Theme setup vertical tabs.
   $form['theme_setup_tabs'] = array(
     '#type' => 'vertical_tabs',
     '#title' => t('Theme setup'),
     '#weight' => -10,
+  );
+
+  // Required modules and field configurations.
+  $form['theme_setup_dependencies'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Modules and fields'),
+    '#group' => 'theme_setup_tabs',
+  );
+  $form['theme_setup_dependencies']['enable_modules'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable required modules'),
+    '#description' => t('Enable modules defined in modules/modules.json.'),
+    '#default_value' => 0,
+  );
+  $form['theme_setup_dependencies']['import_fields'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Import field configurations'),
+    '#description' => t('Import field definitions and instances using Backdrop CMI.'),
+    '#default_value' => 0,
   );
 
   // Taxonomy settings.
@@ -108,13 +138,65 @@ function backdrop_theme_setup_form_system_theme_settings_alter(&$form, &$form_st
   }
 
   // Custom submit handler.
-  $form['#submit'][] = 'theme_setup_theme_setup_submit';
+  $form['#submit'][] = 'backdrop_theme_setup_theme_setup_submit';
+  
+	// Shared dependency status and message.
+	$blocked_message = '';
+
+	if (!empty($requirements['invalid'])) {
+	  $blocked_message = t(
+		'Invalid module names: @modules.',
+		array('@modules' => implode(', ', $requirements['invalid']))
+	  );
+	}
+	elseif (!empty($requirements['missing'])) {
+	  $blocked_message = t(
+		'Missing required modules: @modules. Install them using the Project Installer.',
+		array('@modules' => implode(', ', $requirements['missing']))
+	  );
+	}
+	elseif ($blocked) {
+	  $blocked_message = t(
+		'Module requirements could not be verified.'
+	  );
+	}
+
+	// Apply the same dependency status to all three options.
+	$dependency_options = array(
+	  'theme_setup_dependencies' => array(
+		'enable_modules',
+		'import_fields',
+	  ),
+	  'theme_setup_content' => array(
+		'import_content',
+	  ),
+	);
+
+	foreach ($dependency_options as $group => $options) {
+	  foreach ($options as $option) {
+		if (isset($form[$group][$option]) && $blocked) {
+		  $form[$group][$option]['#disabled'] = TRUE;
+
+		  // Preserve the original description.
+		  $description = isset($form[$group][$option]['#description'])
+			? $form[$group][$option]['#description']
+			: '';
+
+		  $form[$group][$option]['#description'] =
+			$description . '<div class="messages warning">' .
+			check_plain($blocked_message) .
+			'</div>';
+		}
+	  }
+	}
 }
 
 /**
  * Submit handler for theme setup settings.
  */
 function backdrop_theme_setup_theme_setup_submit($form, &$form_state) {
+  $enable_modules = !empty($form_state['values']['enable_modules']);
+  $import_fields = !empty($form_state['values']['import_fields']);
   $import_terms = !empty($form_state['values']['import_terms']);
   $import_content = !empty($form_state['values']['import_content']);
   $import_menu_links = !empty($form_state['values']['import_menu_links']);
@@ -134,6 +216,8 @@ function backdrop_theme_setup_theme_setup_submit($form, &$form_state) {
 
   // Do not persist setup actions in theme settings.
   unset(
+    $form_state['values']['enable_modules'],
+    $form_state['values']['import_fields'],
     $form_state['values']['import_terms'],
     $form_state['values']['import_content'],
     $form_state['values']['import_menu_links'],
@@ -144,7 +228,9 @@ function backdrop_theme_setup_theme_setup_submit($form, &$form_state) {
   );
 
   // Stop if no setup option was selected.
-  if (!$import_terms &&
+  if (!$enable_modules &&
+      !$import_fields &&
+      !$import_terms &&
       !$import_content &&
       !$import_menu_links &&
       !$update_views_filters &&
@@ -163,6 +249,41 @@ function backdrop_theme_setup_theme_setup_submit($form, &$form_state) {
   }
 
   require_once $file;
+
+  // Recheck on submit; never rely solely on disabled form controls.
+  $requirements = theme_setup_module_requirements($theme);
+  if (($enable_modules || $import_fields || $import_content) &&
+      (!$requirements['valid'] || $requirements['missing'] || $requirements['invalid'])) {
+    backdrop_set_message(t('Cannot proceed. Missing or invalid required modules: @modules', array(
+      '@modules' => implode(', ', array_merge($requirements['missing'], $requirements['invalid'])),
+    )), 'error');
+    return;
+  }
+
+	// Enable required modules only when needed.
+	if ($enable_modules || $import_fields || $import_content) {
+	  if (!empty($requirements['disabled'])) {
+		if (!theme_setup_enable_modules($theme)) {
+		  backdrop_set_message(t('Failed to enable required modules.'), 'error');
+		  return;
+		}
+
+		backdrop_set_message(t('Required modules enabled successfully.'));
+	  }
+	  elseif ($enable_modules) {
+		backdrop_set_message(t('All required modules are already enabled.'));
+	  }
+	}
+
+  if ($import_fields) {
+    if (theme_setup_import_fields($theme)) {
+      backdrop_set_message(t('Field configurations imported successfully.'));
+    }
+    else {
+      backdrop_set_message(t('Failed to import field configurations.'), 'error');
+      return;
+    }
+  }
 
   // Import taxonomy terms.
   if ($import_terms) {

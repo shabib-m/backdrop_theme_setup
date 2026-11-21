@@ -1,0 +1,11 @@
+{
+    "delta": "top_header",
+    "info": "top header",
+    "title": "",
+    "description": "",
+    "body": {
+        "value": "<div class=\"bg-forest text-white/80 text-xs sm:text-sm\"><div class=\"max-w-7xl mx-auto px-5 py-2 flex justify-between gap-4\"><span>Together, We Create Lasting Community Impact</span><span>Community Nonprofit Organization <span class=\"mx-2 opacity-40\">|</span> Saudi Arabia</span></div></div>",
+        "format": "full_html"
+    },
+    "default_langcode": "und"
+}

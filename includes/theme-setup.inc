@@ -40,6 +40,114 @@ function theme_setup_read_json($theme, $relative_path) {
 }
 
 /**
+ * Inspect required modules before running theme setup.
+ *
+ * @return array
+ *   Lists of missing, disabled, and invalid module names, plus configuration status.
+ */
+function theme_setup_module_requirements($theme) {
+  $result = array('missing' => array(), 'disabled' => array(), 'invalid' => array(), 'valid' => TRUE);
+  $data = theme_setup_read_json($theme, 'modules/modules.json');
+  if (!is_array($data) || !isset($data['modules']) || !is_array($data['modules'])) {
+    $result['valid'] = FALSE;
+    return $result;
+  }
+
+  // Discover installed files, including disabled modules, through Backdrop.
+  $available = system_rebuild_module_data();
+  foreach (array_unique($data['modules'], SORT_REGULAR) as $module) {
+    if (!is_string($module) || !preg_match('/^[a-z][a-z0-9_]*$/', $module)) {
+      $result['invalid'][] = is_scalar($module) ? (string) $module : '(invalid value)';
+    }
+    elseif (!isset($available[$module])) {
+      $result['missing'][] = $module;
+    }
+    elseif (!module_exists($module)) {
+      $result['disabled'][] = $module;
+    }
+  }
+  return $result;
+}
+
+/**
+ * Enable modules required by the theme setup.
+ *
+ * @param string $theme
+ *   Theme machine name.
+ *
+ * @return bool
+ *   TRUE if all required modules are enabled.
+ */
+function theme_setup_enable_modules($theme) {
+  $requirements = theme_setup_module_requirements($theme);
+  if (!$requirements['valid'] || $requirements['missing'] || $requirements['invalid']) {
+    watchdog('theme_setup', 'Required modules are missing or invalid: @modules', array(
+      '@modules' => implode(', ', array_merge($requirements['missing'], $requirements['invalid'])),
+    ), WATCHDOG_ERROR);
+    return FALSE;
+  }
+
+  if (!$requirements['disabled']) {
+    return TRUE;
+  }
+
+  if (!module_enable($requirements['disabled'], TRUE)) {
+    watchdog('theme_setup', 'Failed to enable required modules: @modules', array(
+      '@modules' => implode(', ', $requirements['disabled']),
+    ), WATCHDOG_ERROR);
+    return FALSE;
+  }
+
+  foreach ($requirements['disabled'] as $module) {
+    if (!module_exists($module)) {
+      watchdog('theme_setup', 'Module @module was not enabled.', array('@module' => $module), WATCHDOG_ERROR);
+      return FALSE;
+    }
+  }
+  return TRUE;
+}
+
+/**
+ * Import field configuration using Backdrop CMI.
+ */
+function theme_setup_import_fields($theme) {
+  $directory = backdrop_get_path('theme', $theme) . '/settings-content/fields';
+
+  if (!is_dir($directory)) {
+    return FALSE;
+  }
+
+  $storage = new ConfigFileStorage($directory);
+
+  // Import field definitions before instances.
+  foreach (array('field.field.', 'field.instance.') as $prefix) {
+    foreach ($storage->listAll($prefix) as $name) {
+      $config = config($name);
+
+      // Never overwrite existing configuration.
+      if (!$config->isNew()) {
+        continue;
+      }
+
+      $data = $storage->read($name);
+
+      if (!is_array($data)) {
+        return FALSE;
+      }
+
+      $config->setData($data);
+
+      // Allow Field API to process the configuration.
+      module_invoke_all('config_create', $config);
+
+      $config->save();
+    }
+  }
+
+  return TRUE;
+}
+
+/**
  * Flush selected image style derivatives.
  *
  * @param array|string|null $styles
@@ -379,6 +487,36 @@ function theme_setup_prepare_field($theme, $field_name, $value) {
         }
         break;
 
+      case 'entityreference':
+          if (!module_exists('entityreference') ||
+              !is_array($item) ||
+              empty($item['type']) ||
+              empty($item['title']) ||
+              !is_string($item['type']) ||
+              !is_string($item['title'])) {
+            return FALSE;
+          }
+
+          // Resolve the referenced node using its content type and title.
+          $query = new EntityFieldQuery();
+          $result = $query
+            ->entityCondition('entity_type', 'node')
+            ->entityCondition('bundle', $item['type'])
+            ->propertyCondition('title', $item['title'])
+            ->range(0, 2)
+            ->execute();
+
+          $matches = isset($result['node']) ? $result['node'] : array();
+
+          // Reject missing or ambiguous references.
+          if (count($matches) !== 1) {
+            return FALSE;
+          }
+
+          $node = reset($matches);
+          $items[] = array('target_id' => (int) $node->entity_id);
+          break;
+
       case 'image':
       case 'file':
         if (!is_string($item)) {
@@ -444,7 +582,66 @@ function theme_setup_import_content($theme) {
   $imported = 0;
   $types = node_type_get_types();
 
-  foreach ($data['content'] as $item) {
+  // Import referenced sample nodes before nodes that depend on them.
+  // Preserve the original order when no dependency exists.
+  $pending = $data['content'];
+  $ordered = array();
+  $scheduled = array();
+  $sample_keys = array();
+
+  foreach ($pending as $item) {
+    if (is_array($item) && !empty($item['type']) && !empty($item['title'])) {
+      $sample_keys[$item['type'] . "\0" . $item['title']] = TRUE;
+    }
+  }
+
+  while ($pending) {
+    $remaining = array();
+    $progress = FALSE;
+
+    foreach ($pending as $item) {
+      $waiting = FALSE;
+      if (is_array($item) && !empty($item['fields']) && is_array($item['fields'])) {
+        foreach ($item['fields'] as $field_name => $value) {
+          $field = field_info_field($field_name);
+          if (!$field || $field['type'] !== 'entityreference') {
+            continue;
+          }
+
+          $references = is_array($value) && isset($value[0]) ? $value : array($value);
+          foreach ($references as $reference) {
+            if (is_array($reference) && !empty($reference['type']) && !empty($reference['title'])) {
+              $key = $reference['type'] . "\0" . $reference['title'];
+              if (isset($sample_keys[$key]) && !isset($scheduled[$key])) {
+                $waiting = TRUE;
+                break 2;
+              }
+            }
+          }
+        }
+      }
+
+      if ($waiting) {
+        $remaining[] = $item;
+        continue;
+      }
+
+      $ordered[] = $item;
+      if (is_array($item) && !empty($item['type']) && !empty($item['title'])) {
+        $scheduled[$item['type'] . "\0" . $item['title']] = TRUE;
+      }
+      $progress = TRUE;
+    }
+
+    if (!$progress) {
+      watchdog('theme_setup', 'Circular or unresolved sample content references detected.', array(), WATCHDOG_WARNING);
+      $success = FALSE;
+      break;
+    }
+    $pending = $remaining;
+  }
+
+  foreach ($ordered as $item) {
     if (!is_array($item) ||
         empty($item['type']) ||
         empty($item['title']) ||
@@ -465,21 +662,23 @@ function theme_setup_import_content($theme) {
 
       $alias = trim($item['path'], '/');
 
-      if (!$alias || !module_exists('path') ||
-          !preg_match('@^[a-zA-Z0-9/_-]+$@', $alias)) {
+      if ($alias !== '' && (!module_exists('path') ||
+          !preg_match('@^[a-zA-Z0-9/_-]+$@', $alias))) {
         $success = FALSE;
         continue;
       }
 
       // Do not overwrite an existing path alias.
-      $existing = db_select('url_alias', 'a')
-        ->fields('a', array('source'))
-        ->condition('alias', $alias)
-        ->execute()
-        ->fetchField();
+      if ($alias !== '') {
+        $existing = db_select('url_alias', 'a')
+          ->fields('a', array('source'))
+          ->condition('alias', $alias)
+          ->execute()
+          ->fetchField();
 
-      if ($existing !== FALSE) {
-        continue;
+        if ($existing !== FALSE) {
+          continue;
+        }
       }
     }
 
@@ -669,18 +868,14 @@ function theme_setup_import_menu_links($theme) {
 
       $parent_id = 0;
 
-      // Resolve parent menu link by path.
+      // Resolve parent menu link by title within the same menu.
       if (!empty($item['parent'])) {
-        $parent_path = $item['parent'];
-
-        if (!url_is_external($parent_path) && $parent_path !== '<front>') {
-          $parent_path = backdrop_get_normal_path(trim($parent_path, '/'));
-        }
+        $parent_title = trim($item['parent']);
 
         $parent_id = db_select('menu_links', 'ml')
           ->fields('ml', array('mlid'))
           ->condition('menu_name', $menu)
-          ->condition('link_path', $parent_path)
+          ->condition('link_title', $parent_title)
           ->execute()
           ->fetchField();
 

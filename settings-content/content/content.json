@@ -32,8 +32,7 @@
       "status": 1,
       "path": "articles/introduction-to-backdrop",
       "fields": {
-        "field_image": "backdrop-intro.jpg",
-        "field_tags": "Articles"
+        "field_image": "theme-setup-demo.png"
       }
     },
     {
@@ -46,8 +45,7 @@
       "status": 1,
       "path": "articles/tailwind-css",
       "fields": {
-        "field_image": "tailwind-css.jpg",
-        "field_tags": "Articles"
+        "field_image": "theme-setup-demo.png"
       }
     }
   ]

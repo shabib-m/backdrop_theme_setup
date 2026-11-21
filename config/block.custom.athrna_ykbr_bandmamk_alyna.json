@@ -1,0 +1,11 @@
+{
+    "delta": "athrna_ykbr_bandmamk_alyna",
+    "info": "Our Impact Grows When You Join Us",
+    "title": "",
+    "description": "",
+    "body": {
+        "value": "<section class=\"nonprofit-join\">\r\n  <div class=\"nonprofit-join-inner\">\r\n\r\n    <div class=\"nonprofit-join-content\">\r\n      <span class=\"nonprofit-join-label\">\r\n        Be Part of the Story\r\n      </span>\r\n\r\n      <h2>Our Impact Grows When You Join Us</h2>\r\n\r\n      <p>\r\n        Whether you want to volunteer, become a member, or contribute\r\n        your time, there is always a way for you to make a difference.\r\n      </p>\r\n    </div>\r\n\r\n    <div class=\"nonprofit-join-actions\">\r\n      <a href=\"/join\" class=\"nonprofit-join-primary\">\r\n        Become a Member ←\r\n      </a>\r\n\r\n      <a href=\"/volunteer\" class=\"nonprofit-join-secondary\">\r\n        Volunteer Opportunities\r\n      </a>\r\n    </div>\r\n\r\n  </div>\r\n</section>\r\n",
+        "format": "nonprofit_html"
+    },
+    "default_langcode": "und"
+}
