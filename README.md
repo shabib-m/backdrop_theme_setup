@@ -46,4 +46,14 @@ A review/demo package for the JSON-driven Theme Setup library. **Not production-
 - The submit handler removes one-time checkbox values from `$form_state['values']`, but the ordering relative to Backdrop's standard settings save handler should be verified in a real installation.
 - The image-style flush uses `image_style_flush($style_definition)` rather than passing a string name.
 
+## Credits
 
+- **Created for [Backdrop CMS](https://backdropcms.org/)** by [shabib-m](https://github.com/shabib-m).
+- **Developed with AI assistance.**
+
+
+## License
+
+Backdrop Theme Setup is free and open-source software licensed under the GNU General Public License, version 2 or later (GPL-2.0-or-later).
+
+See [LICENSE.txt](LICENSE.txt) for the full license text.
